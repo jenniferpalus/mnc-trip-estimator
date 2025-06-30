@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 Convention Trip Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    h2 {
+      text-align: center;
+      font-size: 1em;
+      margin-bottom: 0.2em;
+    }
+    label {
+      display: block;
+      margin-top: 1em;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5em;
+      margin-top: 0.3em;
+    }
+    .results {
+      background: #f5f5f5;
+      margin-top: 2em;
+      padding: 1em;
+      border-radius: 8px;
+    }
+    .results h2 {
+      margin-top: 0;
+      font-size: 1em;
+    }
+    #assumptions {
+      margin-top: 1em;
+      font-size: 0.9em;
+    }
+    #printBtn {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-size: 1em;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .no-print {
+      font-size: 0.9em;
+      margin-bottom: 1em;
+    }
+    @media print {
+      #printBtn, .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h2>🎶 MNC 2026 Intl Columbus Expense Estimator</h2>
+
+  <p class="no-print"><strong>Estimate your total cost for MNC 2026</strong> by entering your details below. Reasonable default values are provided, but you can edit any field to match your personal plans.</p>
+
+  <label>Your First Name:
+    <input type="text" id="userName" placeholder="First Name">
+  </label>
+
+  <label>Registration Fee:
+    <select id="regFee">
+      <option value="250">Early-Early Bird ($250)</option>
+      <option value="270">Early Bird ($270)</option>
+      <option value="320">Late Bird ($320)</option>
+    </select>
+  </label>
+
+  <div style="display: flex; gap: 1em;">
+    <label style="flex: 1;">Arrival Date:
+      <input type="date" id="arrival" value="2026-10-24">
+    </label>
+    <label style="flex: 1;">Departure Date:
+      <input type="date" id="departure" value="2026-11-01">
+    </label>
+  </div>
+
+  <label>Hotel Rate Per Night ($):
+    <input type="number" id="hotelRateInput" value="290">
+  </label>
+
+  <label>Split hotel room how many ways?
+    <select id="roomSplit">
+      <option value="1">1 (solo)</option>
+      <option value="2" selected>2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+    </select>
+  </label>
+
+  <label>Travel Method:
+    <select id="travelMethod" onchange="toggleTravelFields()">
+      <option value="">Select one</option>
+      <option value="fly">Flying</option>
+      <option value="drive">Driving</option>
+    </select>
+  </label>
+
+  <div id="flyFields" style="display:none;">
+    <label>Airfare ($) (if flying):
+      <input type="number" id="airfare" value="260">
+    </label>
+    <label>Airport Transport ($) (if flying):
+      <input type="number" id="airportTransport" value="80">
+    </label>
+  </div>
+
+  <div id="driveFields" style="display:none;">
+    <label>Gas Estimate ($):
+      <input type="number" id="gasEstimate" value="100">
+    </label>
+    <label>Hotel Parking Per Night ($):
+      <input type="number" id="parkingPerNight" value="20">
+    </label>
+    <label># of Riders Splitting Driving Costs (if driving):
+      <input type="number" id="riderCount" value="2">
+    </label>
+  </div>
+
+  <label>Meal Budget Per Day ($):
+    <input type="number" id="mealBudget" value="50">
+  </label>
+
+  <label>Extras / Misc ($):
+    <input type="number" id="extras" value="100">
+  </label>
+
+  <button onclick="calculate()">Calculate</button>
+
+  <div class="results" id="output" style="display: none;">
+    <h2>Estimate for <span id="nameOutput"></span> – Created <span id="dateOutput"></span></h2>
+    <h2>Your Estimated Total: $<span id="total"></span></h2>
+
+    <button id="printBtn" onclick="window.print()">🖸️ Print This Estimate</button>
+
+    <div id="assumptions">
+      <h3>Assumptions Used:</h3>
+      <ul>
+        <li id="regFeeLine"></li>
+        <li id="hotelCalcLine"></li>
+        <li id="flightCostLine" style="display:none"></li>
+        <li id="airportTransportLine" style="display:none"></li>
+        <li id="drivingCostLine" style="display:none"></li>
+        <li id="mealCostLine"></li>
+        <li id="extrasLine"></li>
+        <li id="monthlyLine"></li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function toggleTravelFields() {
+      const travelMethod = document.getElementById("travelMethod").value;
+      document.getElementById("flyFields").style.display = travelMethod === "fly" ? "block" : "none";
+      document.getElementById("driveFields").style.display = travelMethod === "drive" ? "block" : "none";
+    }
+
+    function calculate() {
+      const userName = document.getElementById("userName").value || "you";
+      const today = new Date().toLocaleDateString();
+      const regFee = parseFloat(document.getElementById("regFee").value);
+      const arrival = new Date(document.getElementById("arrival").value);
+      const departure = new Date(document.getElementById("departure").value);
+      const hotelRate = parseFloat(document.getElementById("hotelRateInput").value);
+      const roomSplit = parseInt(document.getElementById("roomSplit").value);
+      const travelMethod = document.getElementById("travelMethod").value;
+
+      if (!travelMethod) {
+        alert("Please select a travel method (flying or driving) before calculating.");
+        return;
+      }
+
+      const days = Math.max((departure - arrival) / (1000 * 60 * 60 * 24), 0);
+      const hotelTotal = (hotelRate * days) / roomSplit;
+      let travelCost = 0;
+      let flightCost = 0;
+      let airportTransport = 0;
+      let drivingCost = 0;
+
+      if (travelMethod === "fly") {
+        flightCost = parseFloat(document.getElementById("airfare").value);
+        airportTransport = parseFloat(document.getElementById("airportTransport").value);
+        travelCost = flightCost + airportTransport;
+        document.getElementById("flightCostLine").style.display = "list-item";
+        document.getElementById("airportTransportLine").style.display = "list-item";
+        document.getElementById("drivingCostLine").style.display = "none";
+      } else {
+        const gas = parseFloat(document.getElementById("gasEstimate").value);
+        const parking = parseFloat(document.getElementById("parkingPerNight").value) * days;
+        const riders = parseInt(document.getElementById("riderCount").value);
+        drivingCost = (gas + parking) / riders;
+        travelCost = drivingCost;
+        document.getElementById("flightCostLine").style.display = "none";
+        document.getElementById("airportTransportLine").style.display = "none";
+        document.getElementById("drivingCostLine").style.display = "list-item";
+        document.getElementById("drivingCostLine").textContent = `Driving cost default: ($${gas} gas + $${parking} parking) ÷ ${riders} riders = $${Math.round(drivingCost)}`;
+      }
+
+      const mealPerDay = parseFloat(document.getElementById("mealBudget").value);
+      const mealTotal = mealPerDay * days;
+      const extras = parseFloat(document.getElementById("extras").value);
+      const total = Math.round(regFee + hotelTotal + travelCost + mealTotal + extras);
+      const monthsLeft = Math.max((new Date("2026-10-01") - new Date()) / (1000 * 60 * 60 * 24 * 30), 1);
+      const monthly = Math.round(total / monthsLeft);
+
+      document.getElementById("nameOutput").textContent = userName;
+      document.getElementById("dateOutput").textContent = today;
+      document.getElementById("total").textContent = total;
+      document.getElementById("regFeeLine").textContent = `Registration Fee: $${regFee}`;
+      document.getElementById("hotelCalcLine").textContent = `${days} nights × $${hotelRate} ÷ ${roomSplit} = $${Math.round(hotelTotal)} (hotel divided ${roomSplit} ways)`;
+      document.getElementById("flightCostLine").textContent = `Flight cost: $${Math.round(flightCost)}`;
+      document.getElementById("airportTransportLine").textContent = `Airport transport: $${Math.round(airportTransport)}`;
+      document.getElementById("mealCostLine").textContent = `${days} days × $${mealPerDay} = $${Math.round(mealTotal)} (meals)`;
+      document.getElementById("extrasLine").textContent = `Extras / Miscellaneous: $${Math.round(extras)}`;
+      document.getElementById("monthlyLine").textContent = `Monthly savings needed through 10/1/26: $${monthly}`;
+
+      document.getElementById("output").style.display = "block";
+    }
+  </script>
+</body>
+</html>
